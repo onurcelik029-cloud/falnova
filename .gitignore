@@ -1,0 +1,11 @@
+app/node_modules/
+app/.expo/
+app/dist/
+app/web-build/
+
+backend/node_modules/
+backend/.env
+backend/data/
+
+.DS_Store
+*.log

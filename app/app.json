@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "FalNova",
+    "slug": "falnova",
+    "scheme": "falnova",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0720"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.falnova.mobile",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Kahve falı için fincan fotoğrafını seçmek gerekir.",
+        "NSCameraUsageDescription": "Kahve falı için fincan fotoğrafı çekmek gerekir."
+      }
+    },
+    "android": {
+      "package": "app.falnova.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0720",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Kahve falı için fincan fotoğrafını seçmek gerekir.",
+          "cameraPermission": "Kahve falı için fincan fotoğrafı çekmek gerekir."
+        }
+      ],
+      "expo-secure-store",
+      "expo-iap",
+      [
+        "expo-notifications",
+        {
+          "color": "#DDBB7A"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

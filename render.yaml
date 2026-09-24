@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: falnova-backend
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: ./data/falnova.db
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: READING_DELAY_SCALE
+        value: "1"
+      - key: PAYMENT_PROVIDER
+        value: mock
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.6-flash
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_BILGE
+        sync: false
+      - key: ELEVENLABS_VOICE_GIZEMLI
+        sync: false
+      - key: ELEVENLABS_VOICE_FISILTI
+        sync: false
