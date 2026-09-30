@@ -7,7 +7,7 @@ const sleep = (ms: number) => new Promise((r) => { setTimeout(r, ms); });
 // art arda denendiğinde 503 → 200 şeklinde değişebiliyor. Bu geçici hatalarda sessizce mock içeriğe düşmek
 // yerine kısa aralıklarla 2 kez daha deneriz; kalıcı hatalarda (400/401/403 vb.) hâlâ hemen pes ederiz.
 const RETRY_STATUS = new Set([429, 503]);
-const RETRY_DELAYS_MS = [500, 1200];
+const RETRY_DELAYS_MS = [500, 1200, 2500];
 
 export async function postJson(url: string, headers: Record<string, string>, body: unknown, timeoutMs = 45000): Promise<Response> {
   let lastErr: ProviderError | null = null;
