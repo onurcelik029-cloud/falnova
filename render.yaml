@@ -19,6 +19,8 @@ services:
         value: "1"
       - key: PAYMENT_PROVIDER
         value: mock
+      - key: ALLOW_MOCK_PAYMENTS
+        value: "1"
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_EMAIL
