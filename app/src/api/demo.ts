@@ -6,7 +6,12 @@ import type {
   ChatMessage, CoffeeRequest, CoupleRequest, DreamRequest, FortuneResult, IapVerifyRequest, KarmicRequest,
   PalmRequest, Profile, ReferralInfo, TarotRequest, TransactionRecord, User, VoiceTone, Wallet, ZodiacId,
 } from '@/shared/types.ts';
-import { COSTS, FIRST_PURCHASE_BONUS, PACKAGES, REFERRAL_WELCOME_CREDITS, packageById } from '@/shared/packages.ts';
+import {
+  AD_CREDIT_DAILY_LIMIT, AD_WATCH_PER_CREDIT, COSTS, FIRST_PURCHASE_BONUS, GAME_DAILY_LIMIT, GAME_MIN_PLAY_MS,
+  GAME_REWARD_CREDITS, PACKAGES, REFERRAL_WELCOME_CREDITS, packageById,
+} from '@/shared/packages.ts';
+import { buildWordPuzzle, WORDS_TO_COMPLETE, type WordPuzzle } from '@/shared/wordgame.ts';
+import { makeRng } from '@/shared/rng.ts';
 import { mockCoffee, mockDream, mockHoroscope, mockNatal, mockPalm, mockTarot, type Draft } from '@/shared/mock.ts';
 import { mockChatReply, mockCouple, mockKarmic } from '@/shared/mock2.ts';
 import { readingDelayMs } from '@/shared/pacing.ts';
@@ -36,6 +41,12 @@ interface DemoDb {
   daily: Record<string, { streak: number; reward: number }>;
   /** Kayıt sırasında bir arkadaş kodu girildiyse (demoda gerçek başka kullanıcı yoktur; yalnızca hoş geldin hediyesi simüle edilir). */
   referredCode?: string;
+  /** Nova'nın Sözcük Bulmacası: açık denemeler (attemptId → gerçek kelime listesi + başlangıç zamanı). */
+  gameAttempts: Record<string, { words: string[]; startedAt: number }>;
+  /** Gün başına oyundan kazanılan kredi sayısı (günlük tavan için). */
+  gameRewards: Record<string, number>;
+  /** Gün başına izlenen reklam sayısı ve bu kanaldan verilen kredi. */
+  adWatchDaily: Record<string, { watched: number; creditsPaid: number }>;
 }
 
 const REF_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 0/O, 1/I gibi karıştırılabilecek karakterler hariç
@@ -49,6 +60,9 @@ const empty = (): DemoDb => ({
   transactions: [],
   horoscopeFree: {},
   daily: {},
+  gameAttempts: {},
+  gameRewards: {},
+  adWatchDaily: {},
 });
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
@@ -95,6 +109,9 @@ export function createDemoApi(): Api {
     d.history = [];
     d.chat = [];
     d.daily = {};
+    d.gameAttempts = {};
+    d.gameRewards = {};
+    d.adWatchDaily = {};
     d.referredCode = undefined;
     d.transactions = [{
       id: uid('trx'), type: 'grant', title: 'Hoş geldin hediyesi', credits: DEMO_START_CREDITS, questions: 0,
@@ -398,6 +415,60 @@ export function createDemoApi(): Api {
       const d = await requireUser();
       d.history = d.history.filter((f) => f.id !== id);
       await save();
+    },
+
+    async gameStart(): Promise<{ attemptId: string; puzzle: WordPuzzle }> {
+      const d = await requireUser();
+      const rng = makeRng('game', d.user.id, Date.now(), Math.random());
+      const puzzle = buildWordPuzzle(rng);
+      const attemptId = uid('gm');
+      d.gameAttempts[attemptId] = { words: puzzle.words, startedAt: Date.now() };
+      await save();
+      return { attemptId, puzzle: { grid: puzzle.grid, words: puzzle.words } };
+    },
+    async gameFinish(attemptId: string, foundWords: string[]) {
+      const d = await requireUser();
+      const a = d.gameAttempts[attemptId];
+      if (!a) throw new ApiError('NOT_FOUND', 'Böyle bir oyun denemesi bulunamadı.');
+      delete d.gameAttempts[attemptId]; // tek kullanımlık
+      const found = new Set(foundWords.map((w) => w.toUpperCase()));
+      const complete = a.words.length >= WORDS_TO_COMPLETE && a.words.every((w) => found.has(w));
+      const elapsed = Date.now() - a.startedAt;
+      let rewarded = false;
+      let alreadyMaxedToday = false;
+      if (complete && elapsed >= GAME_MIN_PLAY_MS) {
+        const today = dayKeyTR();
+        const already = d.gameRewards[today] ?? 0;
+        if (already >= GAME_DAILY_LIMIT) {
+          alreadyMaxedToday = true;
+        } else {
+          d.gameRewards[today] = already + 1;
+          d.wallet.credits += GAME_REWARD_CREDITS;
+          logTx(d, 'grant', 'Sözcük Bulmacası ödülü', GAME_REWARD_CREDITS, 0);
+          rewarded = true;
+        }
+      }
+      await save();
+      return { rewarded, alreadyMaxedToday, wallet: { ...d.wallet } };
+    },
+    async adWatch() {
+      const d = await requireUser();
+      const today = dayKeyTR();
+      const cur = d.adWatchDaily[today] ?? { watched: 0, creditsPaid: 0 };
+      cur.watched += 1;
+      const eligible = Math.floor(cur.watched / AD_WATCH_PER_CREDIT);
+      const owed = Math.min(eligible, AD_CREDIT_DAILY_LIMIT) - cur.creditsPaid;
+      let rewarded = false;
+      if (owed > 0) {
+        cur.creditsPaid += owed;
+        d.wallet.credits += owed;
+        logTx(d, 'grant', 'Reklam izleme ödülü', owed, 0);
+        rewarded = true;
+      }
+      d.adWatchDaily[today] = cur;
+      const nextCreditIn = cur.creditsPaid >= AD_CREDIT_DAILY_LIMIT ? 0 : AD_WATCH_PER_CREDIT - (cur.watched % AD_WATCH_PER_CREDIT || AD_WATCH_PER_CREDIT);
+      await save();
+      return { watched: cur.watched, rewarded, nextCreditIn, wallet: { ...d.wallet } };
     },
   };
 }

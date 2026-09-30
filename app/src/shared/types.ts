@@ -154,11 +154,13 @@ export interface KarmicRequest {
 export type KarmicTopicId = 'ask' | 'kariyer' | 'para' | 'aile' | 'kendini' | 'saglik';
 
 export interface CoffeeRequest {
-  /** data:image/jpeg;base64,... veya dosya URI'si (demoda) */
+  /** data:image/jpeg;base64,... veya dosya URI'si (demoda). virtual:true ise boş olabilir. */
   images: string[];
   question?: string;
   /** 'deep': daha kapsamlı okuma (ek bölümler, 2 kredi, daha uzun hazırlanma). */
   depth?: 'standard' | 'deep';
+  /** true: kullanıcının o an kahve/fincanı yok — fotoğrafsız, sezgisel bir okuma istiyor. */
+  virtual?: boolean;
 }
 
 export interface TarotRequest {

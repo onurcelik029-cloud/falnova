@@ -41,6 +41,18 @@ async function tryProviders<T>(label: string, attempts: { provider: AiProvider; 
 // ───────── Kahve ─────────
 export async function coffee(req: CoffeeRequest, profile: AiCtx): Promise<Draft> {
   const base = mockCoffee(req, profile);
+  // Sanal (fotoğrafsız) okuma: görsel modele gönderilecek fotoğraf yok — mockCoffee'nin rastgele seçtiği
+  // sembolleri (base.meta.symbols) metin tabanlı modele verip onun etrafında bir yorum yazdırıyoruz.
+  if (req.virtual) {
+    const symbols = base.meta?.symbols ?? [];
+    const pr = P.coffeeVirtualPrompt(req, profile, symbols);
+    const r = await tryProviders('kahve-sanal', [{ provider: 'gemini', enabled: geminiEnabled(), run: () => geminiJson(pr) }]);
+    if (!r) return base;
+    const j = r.value as Record<string, unknown>;
+    const sections = sectionsFrom(j.sections);
+    if (!sections) return base;
+    return { ...base, summary: str(j.summary, 300) ?? base.summary, sections, provider: r.provider, meta: { ...base.meta, symbols } };
+  }
   const pr = P.coffeePrompt(req, profile);
   const r = await tryProviders('kahve', [
     { provider: 'openai', enabled: openaiEnabled(), run: () => openaiJson({ ...pr, images: req.images }) },

@@ -15,7 +15,7 @@ const sec = (title: string, body: string) => ({ title, body });
 
 // ───────────────────────── Kahve Falı ─────────────────────────
 
-const COFFEE_SYMBOLS: { name: string; meaning: string }[] = [
+export const COFFEE_SYMBOLS: { name: string; meaning: string }[] = [
   { name: 'Kuş', meaning: 'uzaktan gelecek güzel bir haber; bir mesaj ya da telefon yakında yüzünü güldürecek' },
   { name: 'Yol', meaning: 'yeni bir yolculuk ya da hayatında açılacak taze bir sayfa; bu yol seni ferahlatacak' },
   { name: 'Balık', meaning: 'bereket ve maddi rahatlama; emeklerinin karşılığı su gibi akıp gelecek' },
@@ -36,7 +36,9 @@ const COFFEE_SYMBOLS: { name: string; meaning: string }[] = [
 
 export function mockCoffee(req: CoffeeRequest, profile: Profile): Draft {
   const sign = zodiacById(profile.sign);
-  const seed = req.images.map((s) => s.length + s.slice(-24)).join('#') + profile.name + (req.question ?? '');
+  // virtual (fotoğrafsız) okumada gerçek fotoğraftan gelen doğal çeşitlilik yok — her denemede farklı sembol
+  // çıksın diye zaman damgası seed'e eklenir; fotoğraflı okumada seed fotoğrafın kendisinden (deterministik) gelir.
+  const seed = req.images.map((s) => s.length + s.slice(-24)).join('#') + profile.name + (req.question ?? '') + (req.virtual ? String(Date.now()) : '');
   const rng = makeRng('coffee', seed, todayKey());
   const symbols = pickN(rng, COFFEE_SYMBOLS, 5);
   const [near, mid, deep, plate, extra] = symbols;

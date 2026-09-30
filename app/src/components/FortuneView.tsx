@@ -15,6 +15,7 @@ import { ScoreBar, ScoreRing } from './ScoreRing';
 import { TarotCardFace } from './TarotCardFace';
 import { Poster } from './Poster';
 import { ZodiacGlyph } from './ZodiacGlyph';
+import { VISION_META, VisionPhoto } from './VisionPhoto';
 import { useApp } from '@/state/app';
 
 interface Props {
@@ -79,9 +80,23 @@ export function FortuneView({ fortune, onUnlock, unlocking, userName }: Props) {
     <View style={{ gap: 14 }}>
       <Reveal index={0}>
         <View style={{ alignItems: 'center', gap: 8, paddingVertical: 6 }}>
-          <View style={{ width: 62, height: 62, borderRadius: 31, backgroundColor: colors.goldTint, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name={KIND_ICON[fortune.kind]} size={28} stroke={1.3} />
-          </View>
+          {VISION_META[fortune.kind] ? (
+            <View style={{ marginBottom: 6 }}>
+              <VisionPhoto
+                source={VISION_META[fortune.kind]!.source}
+                rotate={VISION_META[fortune.kind]!.rotate}
+                label={
+                  fortune.kind === 'coffee' && m.symbols?.[0]
+                    ? `${m.symbols[0].toLocaleUpperCase('tr-TR')} · İŞARET`
+                    : VISION_META[fortune.kind]!.label
+                }
+              />
+            </View>
+          ) : (
+            <View style={{ width: 62, height: 62, borderRadius: 31, backgroundColor: colors.goldTint, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name={KIND_ICON[fortune.kind]} size={28} stroke={1.3} />
+            </View>
+          )}
           <Eyebrow>{KIND_LABEL[fortune.kind]}</Eyebrow>
           <H1 style={{ textAlign: 'center' }}>{fortune.title}</H1>
           <Dim style={{ textAlign: 'center' }}>{fortune.summary}</Dim>

@@ -48,8 +48,8 @@ export default function Coffee() {
     }
   };
 
-  const submit = async () => {
-    if (!pics.length) return setErr('En az bir fotoğraf ekle (fincan ve tabak en iyisi).');
+  const submit = async (virtual = false) => {
+    if (!virtual && !pics.length) return setErr('En az bir fotoğraf ekle (fincan ve tabak en iyisi), ya da fincanın yoksa aşağıdan sezgiyle bakmamı iste.');
     if (!consent) return setErr('Devam etmek için aşağıdaki onayı işaretlemelisin.');
     if (!recorded) {
       const s = await run(() => api.recordConsent());
@@ -58,7 +58,11 @@ export default function Coffee() {
     }
     setErr(null);
     setLoading(true);
-    const res = await run(() => api.coffee({ images: pics.map((p) => p.payload), question: question.trim() || undefined, depth: deep ? 'deep' : 'standard' }));
+    const res = await run(() => api.coffee(
+      virtual
+        ? { images: [], question: question.trim() || undefined, depth: deep ? 'deep' : 'standard', virtual: true }
+        : { images: pics.map((p) => p.payload), question: question.trim() || undefined, depth: deep ? 'deep' : 'standard' },
+    ));
     setLoading(false);
     if (res) { setWallet(res.wallet); showFortune(res.fortune); }
   };
@@ -108,6 +112,22 @@ export default function Coffee() {
         />
       ) : null}
 
+      {!pics.length ? (
+        <View style={{ gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.borderStrong }} />
+            <Dim style={{ fontSize: 11 }}>ya da</Dim>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.borderStrong }} />
+          </View>
+          <Button
+            title="Fincanım Yok, Yine de Bakar mısın?" variant="ghost" small
+            onPress={() => submit(true)}
+            testID="coffee-virtual"
+          />
+          <Dim style={{ fontSize: 11, textAlign: 'center' }}>Sezgiyle, fotoğrafsız bir okuma yaparım.</Dim>
+        </View>
+      ) : null}
+
       <View style={{ gap: 10 }}>
         <Eyebrow>Okuma türü</Eyebrow>
         <Card gold={!deep} onPress={() => setDeep(false)}>
@@ -143,7 +163,7 @@ export default function Coffee() {
         </Text>
       </Pressable>
       <ErrorText>{err}</ErrorText>
-      <Button title={`Falıma Bak · ${deep ? COSTS.coffeeDeep : COSTS.coffee} Kredi`} variant="gold" onPress={submit} testID="coffee-submit" />
+      <Button title={`Falıma Bak · ${deep ? COSTS.coffeeDeep : COSTS.coffee} Kredi`} variant="gold" onPress={() => submit(false)} testID="coffee-submit" />
     </Screen>
   );
 }

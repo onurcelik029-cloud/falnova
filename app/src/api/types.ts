@@ -1,4 +1,5 @@
 import type { DailyState } from '@/shared/daily.ts';
+import type { WordPuzzle } from '@/shared/wordgame.ts';
 import type {
   ChatMessage, CoffeeRequest, CoupleRequest, CreditPackage, DreamRequest, FortuneResult,
   IapVerifyRequest, KarmicRequest, PalmRequest, Profile, ReferralInfo, TarotRequest, TransactionRecord, User, VoiceTone, Wallet, ZodiacId,
@@ -94,4 +95,11 @@ export interface Api {
   history(): Promise<FortuneResult[]>;
   fortune(id: string): Promise<FortuneResult | null>;
   removeFortune(id: string): Promise<void>;
+
+  /** Nova'nın Sözcük Bulmacası: yeni bir deneme başlatır (bulmacayı üretir). */
+  gameStart(): Promise<{ attemptId: string; puzzle: WordPuzzle }>;
+  /** Denemeyi kapatır; tüm kelimeler doğru bulunduysa (ve günlük tavan aşılmadıysa) kredi verir. */
+  gameFinish(attemptId: string, foundWords: string[]): Promise<{ rewarded: boolean; alreadyMaxedToday: boolean; wallet: Wallet }>;
+  /** Bir reklam izlendiğini bildirir; her birkaç izlemede bir (günlük tavana kadar) kredi verir. */
+  adWatch(): Promise<{ watched: number; rewarded: boolean; nextCreditIn: number; wallet: Wallet }>;
 }

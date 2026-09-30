@@ -80,6 +80,15 @@ const MAX_IMAGE_CHARS = 7_000_000; // ~5 MB ikili veri
 
 export function parseCoffee(v: unknown): CoffeeRequest {
   const o = obj(v);
+  const virtual = o.virtual === true;
+  if (virtual) {
+    return {
+      images: [],
+      question: text(o.question, 'Soru', 0, 300, true) || undefined,
+      depth: o.depth === 'deep' ? 'deep' : 'standard',
+      virtual: true,
+    };
+  }
   if (!Array.isArray(o.images) || o.images.length < 1 || o.images.length > 3) throw badRequest('1-3 fotoğraf gerekli.');
   const images = o.images.map((i) => {
     const head = typeof i === 'string' ? /^data:image\/(jpeg|png|webp);base64,/.exec(i) : null;
@@ -90,6 +99,14 @@ export function parseCoffee(v: unknown): CoffeeRequest {
     return i;
   });
   return { images, question: text(o.question, 'Soru', 0, 300, true) || undefined, depth: o.depth === 'deep' ? 'deep' : 'standard' };
+}
+
+export function parseGameFinish(v: unknown): { attemptId: string; foundWords: string[] } {
+  const o = obj(v);
+  const attemptId = text(o.attemptId, 'Deneme kimliği', 1, 40);
+  if (!Array.isArray(o.foundWords) || o.foundWords.length > 20) throw badRequest('Geçersiz kelime listesi.');
+  const foundWords = o.foundWords.map((w) => text(w, 'Kelime', 1, 20));
+  return { attemptId, foundWords };
 }
 
 export function parsePalm(v: unknown): PalmRequest {

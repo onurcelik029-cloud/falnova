@@ -110,5 +110,9 @@ export function createRemoteApi(baseUrl: string): Api {
     removeFortune: async (id: string) => {
       await call('DELETE', `/fortunes/${id}`);
     },
+
+    gameStart: () => call('POST', '/game/start'),
+    gameFinish: (attemptId: string, foundWords: string[]) => call('POST', '/game/finish', { attemptId, foundWords }),
+    adWatch: () => call('POST', '/ads/watch'),
   };
 }

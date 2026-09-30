@@ -112,3 +112,31 @@ CREATE TABLE IF NOT EXISTS daily_ritual (
   created_at TEXT NOT NULL,
   PRIMARY KEY (user_id, day)
 );
+
+-- Nova'nın Sözcük Bulmacası: her deneme sunucuda üretilir ve saklanır (tek kullanımlık); istemci yalnızca
+-- bulduğu kelimeleri bildirir, gerçek liste sunucuda tutulduğu için sahte tamamlama iddiası doğrulanabilir.
+CREATE TABLE IF NOT EXISTS game_attempts (
+  id         TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  words_json TEXT NOT NULL,                 -- bulmacaya yerleştirilen kelimeler (JSON dizi)
+  used       INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_game_attempts_user ON game_attempts(user_id, created_at DESC);
+
+-- Oyunla kazanılan kredilerin günlük tavanı (kullanıcı başına gün başına tek satır)
+CREATE TABLE IF NOT EXISTS game_rewards_daily (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day     TEXT NOT NULL,
+  count   INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, day)
+);
+
+-- Reklam izleyerek kredi kazanma: gün başına izlenen reklam sayısı ve bu kanaldan verilen kredi.
+CREATE TABLE IF NOT EXISTS ad_watch_daily (
+  user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day          TEXT NOT NULL,
+  watched      INTEGER NOT NULL DEFAULT 0,
+  credits_paid INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, day)
+);

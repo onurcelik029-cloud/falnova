@@ -6,7 +6,7 @@ import { colors } from '@/theme';
 export type IconName =
   | 'coffee' | 'tarot' | 'wheel' | 'dream' | 'couple' | 'voice' | 'karmic' | 'spark' | 'lock' | 'back'
   | 'home' | 'chat' | 'book' | 'gem' | 'bell' | 'share' | 'mic' | 'speaker' | 'plus' | 'check' | 'shield'
-  | 'camera' | 'trash' | 'user' | 'scroll' | 'chevron' | 'eye' | 'heart' | 'sun' | 'hand';
+  | 'camera' | 'trash' | 'user' | 'scroll' | 'chevron' | 'eye' | 'heart' | 'sun' | 'hand' | 'puzzle';
 
 // 24x24 çizgi ikonları. Kalın dolgu yok; ince, tek kalınlıkta çizgi.
 const P: Record<IconName, string[]> = {
@@ -100,6 +100,9 @@ const P: Record<IconName, string[]> = {
     'M13.5 10V6a1.5 1.5 0 0 1 3 0v6.5',
     'M16.5 12.5V9a1.5 1.5 0 0 1 3 0v6.5c0 3.6-2.9 6-6.5 6h-1c-2 0-3.3-.7-4.4-2.2L5.3 16c-.7-.9-.5-2.1.5-2.7.8-.5 1.8-.3 2.4.4l.8 1',
     'M9.6 15.6c1 .35 2 .35 3-.15M9.9 18.1c1.3.4 2.7.3 3.9-.3',
+  ],
+  puzzle: [
+    'M4 4h6v3.6a1.8 1.8 0 0 0 3.6 0V4H20v6h-3.6a1.8 1.8 0 0 0 0 3.6H20V20h-6v-3.6a1.8 1.8 0 0 0-3.6 0V20H4v-6h3.6a1.8 1.8 0 0 0 0-3.6H4z',
   ],
 };
 

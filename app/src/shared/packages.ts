@@ -30,6 +30,20 @@ export const REFERRAL_WELCOME_CREDITS = 1;
 /** Bir günde bu kadar krediden fazla harcanınca nazik bir mola hatırlatması gösterilir. */
 export const SOFT_SPEND_NOTICE = 10;
 
+// ── Nova'nın Sözcük Bulmacası (oyunla kredi kazanma) ──
+/** Bulmacayı tamamlayınca kazanılan kredi. */
+export const GAME_REWARD_CREDITS = 1;
+/** Günde en fazla bu kadar kez ödüllendirilir (bulmaca istendiği kadar oynanabilir, fazlası kredi vermez). */
+export const GAME_DAILY_LIMIT = 2;
+/** Bir denemenin, sahtekârlığı zorlaştırmak için geçmesi gereken en az süre (ms). */
+export const GAME_MIN_PLAY_MS = 12_000;
+
+// ── Reklam izleyerek kredi kazanma ──
+/** Bu kadar reklam izleyince 1 kredi kazanılır. */
+export const AD_WATCH_PER_CREDIT = 5;
+/** Günde reklamdan kazanılabilecek en fazla kredi. */
+export const AD_CREDIT_DAILY_LIMIT = 2;
+
 export const PACKAGES: CreditPackage[] = [
   { id: 'credit_5', kind: 'credit', title: '5 Kredi', amount: 5, priceTry: 49.9, description: 'Kahve, tarot ve rüya için ideal başlangıç.' },
   { id: 'credit_15', kind: 'credit', title: '15 Kredi', amount: 15, priceTry: 119.9, badge: 'Önerilen', description: 'Kader senaryosu ve partner analizi için dengeli paket.' },

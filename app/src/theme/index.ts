@@ -27,6 +27,17 @@ export const colors = {
   goldTintStrong: 'rgba(221,187,122,0.18)',
   surface: '#191120', // sohbet balonu, yükseltilmiş yüzey
   userBubble: '#3A2250',
+
+  // Parşömen kart malzemesi (kategori kartları, öne çıkan kartlar) — koyu mürekkep zemin
+  // üstünde "elle yerleştirilmiş kağıt" hissi verir; her fal türü için ayrı doygun renk yok,
+  // tek malzeme + tek altın vurgu + gerektiğinde tek bir bordo mühür.
+  paper: '#F1E6CC',
+  paper2: '#E9DAB8',
+  inkText: '#3B2A1B',
+  inkDim: '#7A6647',
+  gilt: '#A0722E',
+  giltBright: '#C79A4B',
+  wine: '#5C2333',
 };
 
 /**

@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { GAME_MIN_PLAY_MS } from '../../app/src/shared/packages.ts';
 
 const env = process.env;
 
@@ -71,6 +72,12 @@ export const config = {
     appleVerifySandboxUrl: env.APPLE_VERIFY_SANDBOX_URL ?? 'https://sandbox.itunes.apple.com/verifyReceipt',
     googleTokenUrl: env.GOOGLE_TOKEN_URL ?? 'https://oauth2.googleapis.com/token',
     googlePublisherBaseUrl: env.GOOGLE_PUBLISHER_BASE_URL ?? 'https://androidpublisher.googleapis.com/androidpublisher/v3',
+  },
+
+  /** Sözcük Bulmacası: bir denemenin ödül alabilmesi için geçmesi gereken en az süre (kredi çiftliği
+   *  botlarına karşı — bkz. store.ts gameFinish). Testlerde 0'a çekilerek gerçek zamanlı bekleme atlanır. */
+  game: {
+    minPlayMs: Number(env.GAME_MIN_PLAY_MS ?? GAME_MIN_PLAY_MS),
   },
 };
 

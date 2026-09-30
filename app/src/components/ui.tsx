@@ -10,7 +10,7 @@ import { router } from 'expo-router';
 import { colors, gradients, radius, sans, serif } from '@/theme';
 import { Icon, type IconName } from '@/components/Icon';
 import { CurtainReveal } from '@/components/Curtain';
-import Svg, { Defs, Path as RGPath, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Path as RGPath, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 // ───────── Atmosferik ışık: her ekranın arkasında, üstten süzülen soluk bir altın hâle ─────────
 // Düz tek renk zemini "hızlıca boyanmış" hissinden çıkarır; ışık kaynağı hep aynı yerde (üst-orta),
@@ -240,6 +240,79 @@ function PressableCard({ children, onPress, testID }: { children: React.ReactNod
   );
 }
 
+// ───────── Parşömen kart ─────────
+// Kategori kartları ve öne çıkan kartlar için: doygun mücevher renkleri yerine tek malzeme —
+// koyu mürekkep zemin üstünde, hafifçe döndürülmüş, düzensiz (yırtık) kenarlı bir kağıt parçası.
+// RN'de CSS clip-path yok; kenar bir SVG path olarak çiziliyor (0–100 birimlik viewBox,
+// preserveAspectRatio="none" ile kartın gerçek boyutuna gerilir).
+const TORN_EDGE = 'M1.5,0.5 L98.5,0 L100,3 L99.3,97.5 L97,100 L2.8,99.3 L0,96.5 L0.8,3.2 Z';
+
+function PaperCorners() {
+  return (
+    <>
+      <View pointerEvents="none" style={{ position: 'absolute', top: 9, left: 10, opacity: 0.4 }}>
+        <Svg width={11} height={11} viewBox="0 0 11 11"><RGPath d="M0.5 7.2V0.5H7.2" stroke={colors.inkDim} strokeWidth={0.9} fill="none" strokeLinecap="round" /></Svg>
+      </View>
+      <View pointerEvents="none" style={{ position: 'absolute', top: 9, right: 10, opacity: 0.4 }}>
+        <Svg width={11} height={11} viewBox="0 0 11 11"><RGPath d="M10.5 7.2V0.5H3.8" stroke={colors.inkDim} strokeWidth={0.9} fill="none" strokeLinecap="round" /></Svg>
+      </View>
+    </>
+  );
+}
+
+/** Tek bir bordo "mühür" — sayfada sadece bir yerde, seyrek kullanılan tek doygun renk vurgusu. */
+function WaxSeal({ size = 34 }: { size?: number }) {
+  return (
+    <View
+      style={{
+        position: 'absolute', right: -size * 0.22, top: -size * 0.22, width: size, height: size, borderRadius: size / 2,
+        backgroundColor: colors.wine, alignItems: 'center', justifyContent: 'center',
+        shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4,
+        transform: [{ rotate: '8deg' }],
+      }}
+    >
+      <Svg width={size * 0.42} height={size * 0.42} viewBox="0 0 24 24">
+        <RGPath d="M12,3 13.6,10.4 21,12 13.6,13.6 12,21 10.4,13.6 3,12 10.4,10.4 Z" fill={colors.giltBright} />
+      </Svg>
+    </View>
+  );
+}
+
+export function ParchmentCard({
+  children, style, contentStyle, rotate = 0, seal, onPress, testID,
+}: {
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+  contentStyle?: StyleProp<ViewStyle>;
+  /** Derece cinsinden hafif eğim — "elle bırakılmış kağıt" hissi için (örn. -2, 1.5). */
+  rotate?: number;
+  /** Tek, seyrek kullanılan bordo mühür vurgusu (örn. öne çıkan tek bir kart). */
+  seal?: boolean;
+  onPress?: () => void;
+  testID?: string;
+}) {
+  const body = (
+    <View style={[{ transform: [{ rotate: `${rotate}deg` }] }, style]} testID={onPress ? undefined : testID}>
+      <View style={s.paperShadow}>
+        <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={StyleSheet.absoluteFill as never}>
+          <Defs>
+            <SvgLinearGradient id="paperFill" x1="15%" y1="0%" x2="85%" y2="100%">
+              <Stop offset="0" stopColor={colors.paper} />
+              <Stop offset="1" stopColor={colors.paper2} />
+            </SvgLinearGradient>
+          </Defs>
+          <RGPath d={TORN_EDGE} fill="url(#paperFill)" stroke={colors.gilt} strokeWidth={0.5} strokeOpacity={0.5} />
+        </Svg>
+        <PaperCorners />
+        {seal ? <WaxSeal /> : null}
+        <View style={[s.paperContent, contentStyle]}>{children}</View>
+      </View>
+    </View>
+  );
+  if (!onPress) return body;
+  return <PressableCard onPress={onPress} testID={testID}>{body}</PressableCard>;
+}
+
 // ───────── Yazı öğeleri ─────────
 export function H1({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
   return <Text style={[{ fontFamily: serif, fontSize: 30, color: colors.text, fontWeight: '600', lineHeight: 35 }, style]}>{children}</Text>;
@@ -357,4 +430,9 @@ const s = StyleSheet.create({
     ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {}),
   },
   chip: { paddingHorizontal: 15, paddingVertical: 9, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: 'rgba(255,255,255,0.02)' },
+  paperShadow: {
+    position: 'relative', borderRadius: 3,
+    shadowColor: '#000000', shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 6,
+  },
+  paperContent: { padding: 16 },
 });

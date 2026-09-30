@@ -3,11 +3,18 @@ import type { DatabaseSync } from 'node:sqlite';
 import type {
   ChatMessage, FortuneResult, KarmicTopicId, PartnerInfo, Profile, ReferralInfo, TransactionRecord, User, Wallet, ZodiacId,
 } from '../../app/src/shared/types.ts';
-import { FIRST_PURCHASE_BONUS, FREE_SIGNUP_CREDITS, REFERRAL_REWARD_CREDITS, REFERRAL_WELCOME_CREDITS } from '../../app/src/shared/packages.ts';
+import {
+  AD_CREDIT_DAILY_LIMIT, AD_WATCH_PER_CREDIT, FIRST_PURCHASE_BONUS, FREE_SIGNUP_CREDITS,
+  GAME_DAILY_LIMIT, GAME_REWARD_CREDITS, REFERRAL_REWARD_CREDITS, REFERRAL_WELCOME_CREDITS,
+} from '../../app/src/shared/packages.ts';
 import { nextStreak, rewardForStreak } from '../../app/src/shared/daily.ts';
 import type { MemoryFortune } from '../../app/src/shared/memory.ts';
 import type { Draft } from '../../app/src/shared/mock.ts';
+import { buildWordPuzzle, WORDS_TO_COMPLETE, type WordPuzzle } from '../../app/src/shared/wordgame.ts';
+import { makeRng } from '../../app/src/shared/rng.ts';
 import { id, now, tx } from './db.ts';
+import { config } from './config.ts';
+import { badRequest } from './errors.ts';
 import { noCredits, noQuestions } from './errors.ts';
 
 type Row = Record<string, any>;
@@ -310,6 +317,70 @@ export function createStore(db: DatabaseSync) {
     });
   }
 
+  // ── Nova'nın Sözcük Bulmacası (oyunla kredi kazanma) ──
+  /** Yeni bir deneme üretir ve saklar (tek kullanımlık); gerçek kelime listesi yalnızca sunucuda tutulur. */
+  function gameStart(uid: string): { attemptId: string; puzzle: WordPuzzle } {
+    // Her deneme farklı çıksın diye gerçek zamanlı bir tuz kullanılır (günlük tekrar eden bir bulmaca değil).
+    const rng = makeRng('game', uid, Date.now(), Math.random());
+    const puzzle = buildWordPuzzle(rng);
+    const attemptId = id('gm');
+    db.prepare('INSERT INTO game_attempts (id, user_id, words_json, used, created_at) VALUES (?,?,?,0,?)')
+      .run(attemptId, uid, JSON.stringify(puzzle.words), now());
+    return { attemptId, puzzle: { grid: puzzle.grid, words: puzzle.words } };
+  }
+
+  /** Bugün oyundan kaç kez kredi kazanıldığı — günlük tavan için. */
+  const gameRewardsToday = (uid: string, today: string): number =>
+    Number((db.prepare('SELECT count FROM game_rewards_daily WHERE user_id=? AND day=?').get(uid, today) as Row | undefined)?.count ?? 0);
+
+  /**
+   * Denemeyi kapatır. Deneme gerçek, kullanılmamış, süresi (config.game.minPlayMs) geçmiş ve bildirilen kelimeler
+   * bulmacanın gerçek listesiyle tam eşleşiyorsa (hepsi bulunmuşsa) — günlük tavanı aşmadığı sürece — 1 kredi verir.
+   */
+  function gameFinish(uid: string, attemptId: string, foundWords: string[]): { rewarded: boolean; alreadyMaxedToday: boolean } {
+    return tx(db, () => {
+      const a = db.prepare('SELECT * FROM game_attempts WHERE id=? AND user_id=?').get(attemptId, uid) as Row | undefined;
+      if (!a) throw badRequest('Böyle bir oyun denemesi bulunamadı.');
+      if (a.used) throw badRequest('Bu deneme zaten kapatıldı.');
+      db.prepare('UPDATE game_attempts SET used=1 WHERE id=?').run(attemptId);
+      const words: string[] = JSON.parse(a.words_json);
+      const elapsed = Date.now() - new Date(a.created_at).getTime();
+      const found = new Set((Array.isArray(foundWords) ? foundWords : []).map((w) => String(w).toUpperCase()));
+      const complete = words.length >= WORDS_TO_COMPLETE && words.every((w) => found.has(w));
+      if (!complete || elapsed < config.game.minPlayMs) return { rewarded: false, alreadyMaxedToday: false };
+
+      const today = now().slice(0, 10);
+      const already = gameRewardsToday(uid, today);
+      if (already >= GAME_DAILY_LIMIT) return { rewarded: false, alreadyMaxedToday: true };
+
+      db.prepare(`INSERT INTO game_rewards_daily (user_id, day, count) VALUES (?,?,1)
+                  ON CONFLICT(user_id, day) DO UPDATE SET count = count + 1`).run(uid, today);
+      db.prepare('UPDATE credits SET credits = credits + ?, updated_at=? WHERE user_id=?').run(GAME_REWARD_CREDITS, now(), uid);
+      logTx(uid, 'grant', 'Sözcük Bulmacası ödülü', GAME_REWARD_CREDITS, 0);
+      return { rewarded: true, alreadyMaxedToday: false };
+    });
+  }
+
+  // ── Reklam izleyerek kredi kazanma ──
+  /** Bir reklam izleme kaydeder; her AD_WATCH_PER_CREDIT izlemede (günlük tavana kadar) 1 kredi verir. */
+  function adWatch(uid: string): { watched: number; rewarded: boolean; nextCreditIn: number } {
+    return tx(db, () => {
+      const today = now().slice(0, 10);
+      db.prepare(`INSERT INTO ad_watch_daily (user_id, day, watched, credits_paid) VALUES (?,?,1,0)
+                  ON CONFLICT(user_id, day) DO UPDATE SET watched = watched + 1`).run(uid, today);
+      const row = db.prepare('SELECT watched, credits_paid FROM ad_watch_daily WHERE user_id=? AND day=?').get(uid, today) as Row;
+      const eligible = Math.floor(row.watched / AD_WATCH_PER_CREDIT);
+      const owed = Math.min(eligible, AD_CREDIT_DAILY_LIMIT) - row.credits_paid;
+      if (owed > 0) {
+        db.prepare('UPDATE ad_watch_daily SET credits_paid = credits_paid + ? WHERE user_id=? AND day=?').run(owed, uid, today);
+        db.prepare('UPDATE credits SET credits = credits + ?, updated_at=? WHERE user_id=?').run(owed, now(), uid);
+        logTx(uid, 'grant', 'Reklam izleme ödülü', owed, 0);
+      }
+      const nextCreditIn = row.credits_paid + owed >= AD_CREDIT_DAILY_LIMIT ? 0 : AD_WATCH_PER_CREDIT - (row.watched % AD_WATCH_PER_CREDIT || AD_WATCH_PER_CREDIT);
+      return { watched: row.watched, rewarded: owed > 0, nextCreditIn };
+    });
+  }
+
   // ── Push bildirimleri (Expo) ──
   function savePushToken(uid: string, token: string, platform: string): void {
     db.prepare(`INSERT INTO push_tokens (token, user_id, platform, created_at, updated_at) VALUES (?,?,?,?,?)
@@ -345,6 +416,7 @@ export function createStore(db: DatabaseSync) {
     savePartner, saveFortune, getFortune, listFortunes, deleteFortune, unlockFortune, rawFortuneRow, todaysHoroscope, latestNatal,
     addChat, chat,
     savePushToken, removePushToken, pushTokens, usersAwaitingDailyRitual,
+    gameStart, gameFinish, adWatch,
   };
 }
 

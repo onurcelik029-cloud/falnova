@@ -5,9 +5,10 @@ import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icon } from '@/components/Icon';
 import type { CreditPackage, TransactionRecord, Wallet as WalletBalance } from '@/shared/types.ts';
-import { SOFT_SPEND_NOTICE, formatTry, savingsPercent, unitPrice } from '@/shared/packages.ts';
+import { AD_WATCH_PER_CREDIT, SOFT_SPEND_NOTICE, formatTry, savingsPercent, unitPrice } from '@/shared/packages.ts';
 import type { Offers } from '@/api';
 import { Badge, Body, Button, Card, Dim, Eyebrow, H1, Screen } from '@/components/ui';
+import { useAdWatch } from '@/components/AdWatch';
 import { useApp } from '@/state/app';
 import { timeAgo } from '@/lib/format';
 import { iapCapable, purchasePackage } from '@/lib/iap';
@@ -19,11 +20,13 @@ function Section({ children }: { children: string }) {
 
 export default function Wallet() {
   const { api, wallet, run, setWallet, toast } = useApp();
+  const { watch: watchAd, playing: adPlaying, Overlay: AdOverlay } = useAdWatch();
   const [packages, setPackages] = useState<CreditPackage[]>([]);
   const [txs, setTxs] = useState<TransactionRecord[]>([]);
   const [selected, setSelected] = useState<CreditPackage | null>(null);
   const [paying, setPaying] = useState(false);
   const [offers, setOffers] = useState<Offers>({ firstPurchaseBonus: 0, spentToday: 0 });
+  const [adWatched, setAdWatched] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     const [p, t, w, o] = await Promise.all([run(() => api.packages()), run(() => api.transactions()), run(() => api.wallet()), run(() => api.offers())]);
@@ -82,6 +85,11 @@ export default function Wallet() {
     return true;
   };
 
+  const onWatchAd = async () => {
+    const res = await watchAd();
+    if (res) setAdWatched(res.watched);
+  };
+
   const pay = async () => {
     if (!selected) return;
     setPaying(true);
@@ -123,6 +131,7 @@ export default function Wallet() {
   );
 
   return (
+    <>
     <Screen bottomInset={false}>
       <H1>Cüzdan ve Mağaza</H1>
       <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 22, padding: 22, flexDirection: 'row', gap: 14, borderWidth: 1, borderColor: colors.borderStrong }}>
@@ -172,6 +181,21 @@ export default function Wallet() {
         </View>
       </Card>
 
+      <Card testID="ad-credit">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.goldTint, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="speaker" size={20} />
+          </View>
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text style={{ fontFamily: serif, fontSize: 18, color: colors.text, fontWeight: '600' }}>Reklam İzleyerek Kredi Kazan</Text>
+            <Dim style={{ fontSize: 12 }}>
+              Her {AD_WATCH_PER_CREDIT} reklam izlemede +1 kredi{adWatched !== null ? ` · bugün ${adWatched} reklam izlendi` : ''}
+            </Dim>
+          </View>
+        </View>
+        <Button title="Reklam İzle" variant="ghost" small loading={adPlaying} onPress={onWatchAd} style={{ marginTop: 12 }} testID="watch-ad" />
+      </Card>
+
       <Section>Kredi paketleri</Section>
       {credits.map(renderPkg)}
       <Section>Soru paketleri</Section>
@@ -206,5 +230,7 @@ export default function Wallet() {
         ))}
       </Card>
     </Screen>
+    {AdOverlay}
+    </>
   );
 }

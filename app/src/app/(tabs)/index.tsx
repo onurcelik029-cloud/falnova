@@ -2,26 +2,25 @@ import React, { useCallback } from 'react';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/Text';
 import { router, useFocusEffect, type Href } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Badge, Card, Dim, Eyebrow, Screen } from '@/components/ui';
+import { Badge, Dim, Eyebrow, ParchmentCard, Screen } from '@/components/ui';
 import { Icon, Ornament, type IconName } from '@/components/Icon';
+import { Medallion, type MedallionKind } from '@/components/Medallion';
 import { ZodiacGlyph } from '@/components/ZodiacGlyph';
 import { DailyCard, NovaNote, PendingList, useHome } from '@/components/DailyRitual';
 import { useApp } from '@/state/app';
 import { zodiacById } from '@/shared/zodiac.ts';
 import { COSTS } from '@/shared/packages.ts';
-import { colors, gradients, serif } from '@/theme';
+import { colors, serif } from '@/theme';
 
-interface Tile { href: Href; icon: IconName; title: string; sub: string; cost: string; mark: { size: number; top: number; right: number; rotate: string } }
+interface Tile { href: Href; icon: IconName; medallion: MedallionKind; title: string; sub: string; cost: string; rotate: number }
 
-// mark: her karta özgü, kartın kendi ikonunun soluk/kocaman su damgası hâli — tek biçimli
-// rozet tekrarını kırmak için 5 karta 5 farklı boyut/açı/konum.
+// Her kart hafifçe farklı açıda — kusursuz bir ızgara değil, masaya elle bırakılmış kartlar gibi.
 const TILES: Tile[] = [
-  { href: '/coffee', icon: 'coffee', title: 'Kahve Falı', sub: 'Fincanın ve tabağın konuşsun', cost: `${COSTS.coffee} kredi`, mark: { size: 108, top: -22, right: -20, rotate: '-8deg' } },
-  { href: '/tarot', icon: 'tarot', title: 'Tarot', sub: 'Kartını seç, yorumunu al', cost: `${COSTS.tarot} kredi`, mark: { size: 96, top: -16, right: -14, rotate: '11deg' } },
-  { href: '/horoscope', icon: 'wheel', title: 'Burç Rehberi', sub: 'Günlük ve haftalık yorum', cost: 'Hediye', mark: { size: 118, top: -28, right: -26, rotate: '4deg' } },
-  { href: '/dream', icon: 'dream', title: 'Rüya Tabiri', sub: 'Rüyanın gizli anlamı', cost: `${COSTS.dream} kredi`, mark: { size: 100, top: -18, right: -22, rotate: '-14deg' } },
-  { href: '/natal', icon: 'sun', title: 'Doğum Haritası', sub: 'Güneş, Ay ve Yükselenin', cost: 'Hediye', mark: { size: 104, top: -20, right: -16, rotate: '9deg' } },
+  { href: '/coffee', icon: 'coffee', medallion: 'coffee', title: 'Kahve Falı', sub: 'Fincanın ve tabağın konuşsun', cost: `${COSTS.coffee} kredi`, rotate: -2.4 },
+  { href: '/tarot', icon: 'tarot', medallion: 'tarot', title: 'Tarot', sub: 'Kartını seç, yorumunu al', cost: `${COSTS.tarot} kredi`, rotate: 2.1 },
+  { href: '/horoscope', icon: 'wheel', medallion: 'zodiac', title: 'Burç Rehberi', sub: 'Günlük ve haftalık yorum', cost: 'Hediye', rotate: 1.6 },
+  { href: '/dream', icon: 'dream', medallion: 'dream', title: 'Rüya Tabiri', sub: 'Rüyanın gizli anlamı', cost: `${COSTS.dream} kredi`, rotate: -1.5 },
+  { href: '/natal', icon: 'sun', medallion: 'natal', title: 'Doğum Haritası', sub: 'Güneş, Ay ve Yükselenin', cost: 'Hediye', rotate: 2.3 },
 ];
 
 export default function Dashboard() {
@@ -60,65 +59,63 @@ export default function Dashboard() {
       {home?.note ? <NovaNote note={home.note} /> : null}
 
       {/* Öne çıkan: Karmik Dönemeç */}
-      <Pressable onPress={() => router.push('/karmic')} testID="karmic-hero" style={({ pressed }) => ({ opacity: pressed ? 0.92 : 1 })}>
-        <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 22, padding: 22, gap: 10, overflow: 'hidden', borderWidth: 1, borderColor: colors.borderStrong }}>
-          <View style={{ position: 'absolute', right: -18, top: -18, opacity: 0.16 }}>
-            <Icon name="karmic" size={150} color={colors.gold} stroke={0.7} />
-          </View>
-          <Eyebrow>İlk bölüm hediye</Eyebrow>
-          <Text style={{ fontFamily: serif, fontSize: 28, color: colors.text, fontWeight: '600', lineHeight: 33, maxWidth: 270 }}>Karmik Dönemeç ve Kader Senaryosu</Text>
-          <Text style={{ color: colors.textDim, fontSize: 14, lineHeight: 21, maxWidth: 290 }}>Geçmişten taşıdığın borcu ve önümüzdeki üç ayın dönemecini öğren.</Text>
-          <Text style={{ color: colors.goldBright, fontWeight: '500', fontSize: 14, letterSpacing: 0.6, marginTop: 4 }}>Raporunu aç  →</Text>
-        </LinearGradient>
-      </Pressable>
+      <ParchmentCard onPress={() => router.push('/karmic')} testID="karmic-hero" rotate={-1.1} seal contentStyle={{ padding: 22, gap: 10 }}>
+        <View style={{ position: 'absolute', right: 8, top: 6, opacity: 0.9 }}>
+          <Medallion kind="karmic" size={54} />
+        </View>
+        <Text style={{ fontFamily: serif, fontSize: 10.5, letterSpacing: 2.4, color: colors.gilt, fontWeight: '600' }}>İLK BÖLÜM HEDİYE</Text>
+        <Text style={{ fontFamily: serif, fontSize: 26, color: colors.inkText, fontWeight: '600', lineHeight: 31, maxWidth: 230, marginTop: 4 }}>Karmik Dönemeç ve Kader Senaryosu</Text>
+        <Text style={{ color: colors.inkDim, fontSize: 13.5, lineHeight: 20, maxWidth: 260, marginTop: 2 }}>Geçmişten taşıdığın borcu ve önümüzdeki üç ayın dönemecini öğren.</Text>
+        <Text style={{ color: colors.wine, fontWeight: '600', fontSize: 14, letterSpacing: 0.4, marginTop: 6 }}>Raporunu aç  →</Text>
+      </ParchmentCard>
 
       <View style={{ alignItems: 'center', marginVertical: -2 }}><Ornament width={100} /></View>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-        {TILES.map((t) => (
-          <Pressable key={t.title} onPress={() => router.push(t.href)} style={({ pressed }) => ({ width: '48%', flexGrow: 1, alignSelf: 'stretch', opacity: pressed ? 0.88 : 1 })} testID={`tile-${t.title}`}>
-            <LinearGradient colors={gradients.card} style={{ borderRadius: 18, padding: 16, gap: 8, borderWidth: 1, borderColor: colors.border, minHeight: 156, flex: 1, overflow: 'hidden' }}>
-              <View pointerEvents="none" style={{ position: 'absolute', top: t.mark.top, right: t.mark.right, opacity: 0.1, transform: [{ rotate: t.mark.rotate }] }}>
-                <Icon name={t.icon} size={t.mark.size} color={colors.gold} stroke={0.7} />
-              </View>
-              <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: colors.goldTint, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name={t.icon} size={22} />
-              </View>
-              <Text style={{ fontFamily: serif, color: colors.text, fontSize: 21, fontWeight: '600', marginTop: 2 }}>{t.title}</Text>
-              <Dim style={{ fontSize: 12.5, flex: 1, lineHeight: 18 }}>{t.sub}</Dim>
-              <Text style={{ color: colors.gold, fontSize: 11, letterSpacing: 1.4 }}>{t.cost.toLocaleUpperCase('tr-TR')}</Text>
-            </LinearGradient>
-          </Pressable>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, paddingTop: 4 }}>
+        {TILES.map((t, i) => (
+          <ParchmentCard
+            key={t.title}
+            onPress={() => router.push(t.href)}
+            testID={`tile-${t.title}`}
+            rotate={t.rotate}
+            style={{ width: '46.5%', flexGrow: 1, marginTop: i % 2 ? 12 : 0 }}
+            contentStyle={{ padding: 15, minHeight: 172, alignItems: 'center' }}
+          >
+            <View style={{ transform: [{ scale: 1.05 }], marginBottom: 2 }}>
+              <Medallion kind={t.medallion} size={68} />
+            </View>
+            <Text style={{ fontFamily: serif, color: colors.inkText, fontSize: 18, fontWeight: '600', marginTop: 4, textAlign: 'center' }}>{t.title}</Text>
+            <Dim style={{ fontSize: 11.5, textAlign: 'center', color: colors.inkDim, marginTop: 2 }}>{t.sub}</Dim>
+            <Text style={{ color: colors.gilt, fontSize: 9.5, letterSpacing: 1, marginTop: 8, fontWeight: '600' }}>{t.cost.toLocaleUpperCase('tr-TR')}</Text>
+          </ParchmentCard>
         ))}
       </View>
 
-      <WideRow icon="couple" title="Partner Analizi" sub={`Sinerji, çatışma ve ilişki haritanız · ${COSTS.couple} kredi`} href="/couple" gold />
-      <WideRow icon="hand" title="El Falı" sub={`Avuç içindeki çizgilerin ne söylediğine bak · ${COSTS.palm} kredi`} href="/palm" />
-      <WideRow icon="voice" title="Sesli Falcı" sub="Gerçek falcı sesiyle sohbet — çok yakında" href="/voice" soon />
+      <WideRow icon="couple" medallion="couple" title="Partner Analizi" sub={`Sinerji, çatışma ve ilişki haritanız · ${COSTS.couple} kredi`} href="/couple" rotate={-0.9} />
+      <WideRow icon="hand" medallion="palm" title="El Falı" sub={`Avuç içindeki çizgilerin ne söylediğine bak · ${COSTS.palm} kredi`} href="/palm" rotate={0.8} />
+      <WideRow icon="puzzle" medallion="game" title="Nova'nın Sözcük Bulmacası" sub="Oyna, kelimeleri bul, kredi kazan" href="/game" rotate={-1.1} />
+      <WideRow icon="voice" medallion="voice" title="Sesli Falcı" sub="Gerçek falcı sesiyle sohbet — çok yakında" href="/voice" rotate={0.7} soon />
       <View style={{ height: 10 }} />
     </Screen>
   );
 }
 
-function WideRow({ icon, title, sub, href, gold, soon }: { icon: IconName; title: string; sub: string; href: Href; gold?: boolean; soon?: boolean }) {
+function WideRow({ icon, medallion, title, sub, href, rotate = 0, soon }: { icon: IconName; medallion: MedallionKind; title: string; sub: string; href: Href; rotate?: number; soon?: boolean }) {
   return (
-    <Card onPress={() => router.push(href)} gold={gold} style={{ paddingVertical: 16 }}>
-      <View pointerEvents="none" style={{ position: 'absolute', right: -20, top: -24, opacity: 0.09, transform: [{ rotate: '-9deg' }] }}>
-        <Icon name={icon} size={104} color={colors.gold} stroke={0.7} />
-      </View>
-      <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
-        <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.goldTint, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', opacity: soon ? 0.6 : 1 }}>
-          <Icon name={icon} size={23} />
+    <ParchmentCard onPress={() => router.push(href)} rotate={rotate} contentStyle={{ paddingVertical: 15, opacity: soon ? 0.7 : 1 }}>
+      <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
+        <View style={{ transform: [{ scale: 0.72 }], margin: -9 }}>
+          <Medallion kind={medallion} size={72} />
         </View>
         <View style={{ flex: 1, gap: 3 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ fontFamily: serif, fontSize: 21, color: soon ? colors.textDim : colors.text, fontWeight: '600' }}>{title}</Text>
+            <Text style={{ fontFamily: serif, fontSize: 19, color: colors.inkText, fontWeight: '600' }}>{title}</Text>
             {soon ? <Badge text="Yakında" tone="amber" /> : null}
           </View>
-          <Dim style={{ fontSize: 12.5 }}>{sub}</Dim>
+          <Dim style={{ fontSize: 12, color: colors.inkDim }}>{sub}</Dim>
         </View>
-        <Icon name="chevron" size={18} color={colors.textFaint} />
+        <Icon name="chevron" size={16} color={colors.gilt} />
       </View>
-    </Card>
+    </ParchmentCard>
   );
 }

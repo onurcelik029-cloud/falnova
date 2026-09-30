@@ -355,6 +355,24 @@ export function createApp(db: DatabaseSync) {
     res.json({ transaction: tx, wallet: store.wallet(req.userId) });
   }));
 
+  // ───────── Nova'nın Sözcük Bulmacası (oyunla kredi kazanma) ─────────
+  api.post('/game/start', requireAuth, rateLimit(20, 60_000), wrap((req, res) => {
+    res.json(store.gameStart(req.userId));
+  }));
+  api.post('/game/finish', requireAuth, rateLimit(20, 60_000), wrap((req, res) => {
+    const { attemptId, foundWords } = V.parseGameFinish(req.body);
+    const r = store.gameFinish(req.userId, attemptId, foundWords);
+    res.json({ ...r, wallet: store.wallet(req.userId) });
+  }));
+
+  // ───────── Reklam izleyerek kredi kazanma ─────────
+  // Gerçek reklam SDK'sı (AdMob rewarded video vb.) istemci tarafında entegre edilene kadar bu uç nokta
+  // istemcinin "bir reklam gösterildi" bildirimine güvenir; asıl kötüye kullanım koruması günlük tavandır.
+  api.post('/ads/watch', requireAuth, rateLimit(30, 60_000), wrap((req, res) => {
+    const r = store.adWatch(req.userId);
+    res.json({ ...r, wallet: store.wallet(req.userId) });
+  }));
+
   // ───────── Yönetici paneli ─────────
   // Kullanıcı hesap sisteminden tamamen ayrı: kendi e-posta/şifresi, kendi token türü, kendi arayüzü.
   // Panel dosyaları statik olarak /admin altında sunulur; veri uçları /api/admin altında ayrı bir router'dadır.
