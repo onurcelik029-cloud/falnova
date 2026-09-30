@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider } from '@/state/app';
 import { useAppFonts } from '@/lib/fonts';
 import { initAmbientSound, retryAmbientOnGesture } from '@/lib/ambient';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { colors } from '@/theme';
 
 /** Kayıtlı ortam sesi tercihini açılışta uygular; web'de otomatik oynatma engellenirse ilk dokunuşta yeniden dener. */
@@ -44,10 +45,12 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <Frame>
-        <AppProvider>
-          <StatusBar style="light" />
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }} />
-        </AppProvider>
+        <ErrorBoundary>
+          <AppProvider>
+            <StatusBar style="light" />
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }} />
+          </AppProvider>
+        </ErrorBoundary>
       </Frame>
     </SafeAreaProvider>
   );
