@@ -9,6 +9,29 @@ import { initAmbientSound, retryAmbientOnGesture } from '@/lib/ambient';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { colors } from '@/theme';
 
+/**
+ * Web'de tarayıcının otomatik çeviri özelliğini (ör. Chrome'un "Bu sayfayı çevir" önerisi) kapatır.
+ * `output: "single"` (SPA) modunda dışa aktarılan statik HTML'e `+html.tsx` ile eklenen `translate="no"` /
+ * `notranslate` etiketleri işlenmiyor (bu özelleştirme yalnızca `output: "static"` modunda uygulanıyor), bu
+ * yüzden aynı etkiyi çalışma zamanında doğrudan gerçek `<html>` elemanına uygulayıp DOM'u kalıcı olarak koruruz.
+ * Otomatik çeviri, sık güncellenen küçük metin parçacıklarından oluşan ızgara tabanlı ekranlarda (ör. Sözcük
+ * Bulmacası harf ızgarası) React'in DOM güncellemeleriyle çakışıp harflerin üzerine yabancı kelimeler
+ * ("BEN", "BENCE" gibi) yapıştırarak ekranı bozabiliyor; bunu önler.
+ */
+function useDisableWebTranslate() {
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    document.documentElement.setAttribute('translate', 'no');
+    document.documentElement.setAttribute('lang', 'tr');
+    if (!document.querySelector('meta[name="google"]')) {
+      const meta = document.createElement('meta');
+      meta.name = 'google';
+      meta.content = 'notranslate';
+      document.head.appendChild(meta);
+    }
+  }, []);
+}
+
 /** Kayıtlı ortam sesi tercihini açılışta uygular; web'de otomatik oynatma engellenirse ilk dokunuşta yeniden dener. */
 function useAmbientSoundBoot() {
   useEffect(() => {
@@ -41,6 +64,7 @@ function Frame({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   const fontsReady = useAppFonts();
   useAmbientSoundBoot();
+  useDisableWebTranslate();
   if (!fontsReady) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   return (
     <SafeAreaProvider>
